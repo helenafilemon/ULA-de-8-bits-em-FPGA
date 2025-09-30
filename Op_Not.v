@@ -1,4 +1,4 @@
-	module opLogicoNOT(S, A);
+module opLogicoNOT(S, A);
 	input [7:0] A;
 	output [7:0] S;
 	
