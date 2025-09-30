@@ -1,4 +1,4 @@
-	module opLogicoXOR(S, A, B);
+module opLogicoXOR(S, A, B);
 	input [7:0] A, B;
 	output [7:0] S;
 	
