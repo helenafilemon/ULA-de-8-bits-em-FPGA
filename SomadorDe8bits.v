@@ -1,4 +1,4 @@
-module somadorde4bits (S, Cout, A, B);
+module somadorde8bits (S, Cout, A, B);
 	input [7:0] A, B;
 	output [7:0] S;
 	output Cout;
