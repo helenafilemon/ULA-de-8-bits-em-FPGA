@@ -28,7 +28,7 @@ module registrador_8bits_com_enable (
             );
 
             // O Flip-Flop armazena o que quer que o MUX tenha decidido
-            flip_flop_d_estrutural ff_bit (
+            flip_flop_d ff_bit (
                 .clk(clk),
                 .reset_n(reset_n),
                 .d(d_para_ff[i]),
@@ -37,5 +37,6 @@ module registrador_8bits_com_enable (
             
         end
     endgenerate
+
 
 endmodule
