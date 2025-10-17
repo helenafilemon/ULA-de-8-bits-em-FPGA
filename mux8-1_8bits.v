@@ -3,7 +3,7 @@
  * Função: Um Multiplexador 8-para-1 para um barramento de 8 bits.
  * Construído 100% estruturalmente instanciando o seu módulo 'mux_8x1' 8 vezes.
  */
-module mux_8para1_8bits_estrutural (
+module mux_8para1_8bits (
     // 8 entradas, cada uma sendo um barramento de 8 bits
     input [7:0] in0, in1, in2, in3, in4, in5, in6, in7,
     
