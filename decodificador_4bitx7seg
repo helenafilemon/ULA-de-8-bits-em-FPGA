@@ -1,0 +1,89 @@
+
+module decodificador_4bitx7seg (
+    input [3:0] data_in,      // 4 bits de entrada (D3, D2, D1, D0)
+    output [6:0] segments    // 7 segmentos (g, f, e, d, c, b, a)
+);
+
+    wire D3 = data_in[3];
+    wire D2 = data_in[2];
+    wire D1 = data_in[1];
+    wire D0 = data_in[0];
+
+    wire ND3, ND2, ND1, ND0;
+    not (ND3, D3);
+    not (ND2, D2);
+    not (ND1, D1);
+    not (ND0, D0);
+
+    // segmentos de saída (gfedcba)
+    wire seg_a, seg_b, seg_c, seg_d, seg_e, seg_f, seg_g;
+
+    // --- Segmento A (segments[0]) ---
+    // Ativação (0=ON): D3 D2 + D3 D1 + D2 ND1 ND0 + ND3 ND2 ND1 D0 + D2 ND1 D0
+    wire a_term1, a_term2, a_term3, a_term4, a_term5;
+    and (a_term1, D3, D2);
+    and (a_term2, D3, D1);
+    and (a_term3, D2, ND1, ND0);
+    and (a_term4, ND3, ND2, ND1, D0);
+    and (a_term5, D2, ND1, D0);
+    // Atribuição de saída: A saída segments[0] é o NOR das ativacoes para manter o '0' aceso
+    nor (segments[0], a_term1, a_term2, a_term3, a_term4, a_term5);
+
+    // --- Segmento B (segments[1]) ---
+    // Ativação (0=ON): D3 ND0 + ND2 ND1 + ND3 D2 ND1 + ND3 ND2 D1
+    wire b_term1, b_term2, b_term3, b_term4;
+    and (b_term1, D3, ND0);
+    and (b_term2, ND2, ND1);
+    and (b_term3, ND3, D2, ND1);
+    and (b_term4, ND3, ND2, D1);
+    nor (segments[1], b_term1, b_term2, b_term3, b_term4);
+
+    // --- Segmento C (segments[2]) ---
+    // Ativação (0=ON): ND3 D1 ND0 + ND2 ND1 + D2 ND1 D0 + D2 D1 ND0 + D3 ND2
+    wire c_term1, c_term2, c_term3, c_term4, c_term5;
+    and (c_term1, ND3, D1, ND0);
+    and (c_term2, ND2, ND1);
+    and (c_term3, D2, ND1, D0);
+    and (c_term4, D2, D1, ND0);
+    and (c_term5, D3, ND2);
+    nor (segments[2], c_term1, c_term2, c_term3, c_term4, c_term5);
+
+    // --- Segmento D (segments[3]) ---
+    // Ativação (0=ON): ND2 ND1 ND0 + D3 ND2 + ND3 D2 ND1 ND0 + D2 D1 ND0 + ND3 ND2 D1 D0
+    wire d_term1, d_term2, d_term3, d_term4, d_term5;
+    and (d_term1, ND2, ND1, ND0);
+    and (d_term2, D3, ND2);
+    and (d_term3, ND3, D2, ND1, ND0);
+    and (d_term4, D2, D1, ND0);
+    and (d_term5, ND3, ND2, D1, D0);
+    nor (segments[3], d_term1, d_term2, d_term3, d_term4, d_term5);
+
+    // --- Segmento E (segments[4]) ---
+    // Ativação (0=ON): D2 ND1 ND0 + ND3 ND2 ND1 ND0 + D3 D1 ND0 + ND3 ND2 D1 D0
+    wire e_term1, e_term2, e_term3, e_term4;
+    and (e_term1, D2, ND1, ND0);
+    and (e_term2, ND3, ND2, ND1, ND0);
+    and (e_term3, D3, D1, ND0);
+    and (e_term4, ND3, ND2, D1, D0);
+    nor (segments[4], e_term1, e_term2, e_term3, e_term4);
+
+    // --- Segmento F (segments[5]) ---
+    // Ativação (0=ON): ND2 D1 ND0 + D3 ND2 + ND3 D2 ND1 + ND3 D2 D1 ND0
+    wire f_term1, f_term2, f_term3, f_term4;
+    and (f_term1, ND2, D1, ND0);
+    and (f_term2, D3, ND2);
+    and (f_term3, ND3, D2, ND1);
+    and (f_term4, ND3, D2, D1, ND0);
+    nor (segments[5], f_term1, f_term2, f_term3, f_term4);
+
+    // --- Segmento G (segments[6]) ---
+    // Ativação (0=ON): D2 ND1 + D3 ND1 + D3 ND2 + ND3 D2 D1 ND0 + ND3 D2 ND1 D0
+    wire g_term1, g_term2, g_term3, g_term4, g_term5;
+    and (g_term1, D2, ND1);
+    and (g_term2, D3, ND1);
+    and (g_term3, D3, ND2);
+    and (g_term4, ND3, D2, D1, ND0);
+    and (g_term5, ND3, D2, ND1, D0);
+    nor (segments[6], g_term1, g_term2, g_term3, g_term4, g_term5);
+
+endmodule
