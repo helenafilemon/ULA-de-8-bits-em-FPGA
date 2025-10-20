@@ -20,11 +20,11 @@ module ula_8bits (
 
     somadorde8bits      MOD_SOMA (.A(a), .B(b), .S(res_soma));
     subtrator_8bits    MOD_SUB  (.A(a), .B(b), .S(res_sub));
-    multiplicador_8bits MOD_MULT (.a(a), .b(b), .mult(res_mult)); // Módulo sequencial que você fará
-    divisor_8bits      MOD_DIV  (.a(a), .b(b), .div(res_div));   // Módulo sequencial que você fará
+    multiplicador_8bits MOD_MULT (.a(a), .b(b), .s(res_mult)); // Módulo sequencial que você fará
+    divisor_8bits      MOD_DIV  (.a(a), .b(b), .s(res_div));   // Módulo sequencial que você fará
     opLogicoAND          MOD_AND  (.A(a), .B(b), .S(res_and));
     opLogicoOR           MOD_OR   (.A(a), .B(b), .S(res_or));
-    opLogicoXOR          MOD_XOR  (.a(a), .b(b), .res(res_xor));
+    opLogicoXOR          MOD_XOR  (.A(a), .B(b), .S(res_xor));
     opLogicoNOT          MOD_NOT  (.A(a), .S(res_not)); // NOT só precisa de uma entrada
 
     // --- 2. INSTANCIE O MUX SELETOR ---
