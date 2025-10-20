@@ -18,14 +18,14 @@ module ula_8bits (
     // **IMPORTANTE: Ajuste os nomes dos módulos e das portas (.a, .b, .soma, etc.)
     // para corresponderem exatamente aos que você criou!**
 
-    somador_8bits      MOD_SOMA (.a(a), .b(b), .soma(res_soma));
-    subtrator_8bits    MOD_SUB  (.a(a), .b(b), .sub(res_sub));
+    somadorde8bits      MOD_SOMA (.A(a), .B(b), .S(res_soma));
+    subtrator_8bits    MOD_SUB  (.A(a), .B(b), .S(res_sub));
     multiplicador_8bits MOD_MULT (.a(a), .b(b), .mult(res_mult)); // Módulo sequencial que você fará
     divisor_8bits      MOD_DIV  (.a(a), .b(b), .div(res_div));   // Módulo sequencial que você fará
-    and_8bits          MOD_AND  (.a(a), .b(b), .res(res_and));
-    or_8bits           MOD_OR   (.a(a), .b(b), .res(res_or));
-    xor_8bits          MOD_XOR  (.a(a), .b(b), .res(res_xor));
-    not_8bits          MOD_NOT  (.a(a), .res(res_not)); // NOT só precisa de uma entrada
+    opLogicoAND          MOD_AND  (.A(a), .B(b), .S(res_and));
+    opLogicoOR           MOD_OR   (.A(a), .B(b), .S(res_or));
+    opLogicoXOR          MOD_XOR  (.a(a), .b(b), .res(res_xor));
+    opLogicoNOT          MOD_NOT  (.A(a), .S(res_not)); // NOT só precisa de uma entrada
 
     // --- 2. INSTANCIE O MUX SELETOR ---
     // O MUX seleciona qual dos resultados vai para a saída final.
