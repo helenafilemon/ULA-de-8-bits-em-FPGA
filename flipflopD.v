@@ -12,19 +12,21 @@ module flipflopD (
     end
 endmodule
 
+// --- FILTRO DE BOTAO (DEBOUNCER) ---
+// Proposito: Remove o "repique" (ruido) de um botao mecanico.
 module debouncer (
     input btn_in,
     input clk,
     input rst,
-    output btn_out
+    output btn_out // Pulso limpo de 1 ciclo
 );
     wire sincro1, sincro2;
      
-    // Etapa 1: Sincronizador (Inalterado)
+    // 1. Sincronizador: Alinha o botao (assincrono) com o clock do sistema
     flipflopD ff_sincro1 (.D(btn_in), .clk(clk), .rst(rst), .Q(sincro1));
     flipflopD ff_sincro2 (.D(sincro1),  .clk(clk), .rst(rst), .Q(sincro2));
 
-    // Etapa 2: Registrador de Deslocamento (Reduzido para 10 bits)
+    // 2. Filtro de Estabilidade: Registrador de deslocamento de 10 bits
     wire [9:0] reg_desloc; 
     flipflopD ff_shift0 (.D(sincro2), .clk(clk), .rst(rst), .Q(reg_desloc[0]));
     flipflopD ff_shift1 (.D(reg_desloc[0]), .clk(clk), .rst(rst), .Q(reg_desloc[1]));
@@ -37,64 +39,72 @@ module debouncer (
     flipflopD ff_shift8 (.D(reg_desloc[7]), .clk(clk), .rst(rst), .Q(reg_desloc[8]));
     flipflopD ff_shift9 (.D(reg_desloc[8]), .clk(clk), .rst(rst), .Q(reg_desloc[9]));
  
-   
-    // Etapa 3: Árvore 'AND' (Reduzida para 10 bits)
-    wire w0, w1, w2, w3, w4; // Nível 1
-    wire w5, w6;             // Nível 2
-    wire w7;                 // Nível 3
-    wire w8;                 // Nível 4 (Final)
+    // Arvore de ANDs para verificar se todos os 10 bits sao '1'
+    wire w0, w1, w2, w3, w4;
+    wire w5, w6; 
+    wire w7; 
+    wire w8; 
 
     and a0(w0, reg_desloc[0], reg_desloc[1]); 
-     and a1(w1, reg_desloc[2], reg_desloc[3]);
+    and a1(w1, reg_desloc[2], reg_desloc[3]);
     and a2(w2, reg_desloc[4], reg_desloc[5]); 
-     and a3(w3, reg_desloc[6], reg_desloc[7]);
+    and a3(w3, reg_desloc[6], reg_desloc[7]);
     and a4(w4, reg_desloc[8], reg_desloc[9]); 
     
     and b0(w5, w0, w1); 
-     and b1(w6, w2, w3); 
+    and b1(w6, w2, w3); 
     
     and c0(w7, w5, w6);
     
-    and d0(w8, w7, w4); // Combina os resultados
+    and d0(w8, w7, w4); // w8 = 1 se todos os 10 bits forem 1
    
     wire sinal_estavel;
-    or final_buffer(sinal_estavel, w8, 1'b0); // w8 é a nova saída da árvore
+    or final_buffer(sinal_estavel, w8, 1'b0); // Buffer
 
-    // Etapa 4: Detector de Borda (Inalterado)
+    // 3. Detector de Borda: Gera um pulso de 1 ciclo
     wire estavel_ant, n_estavel_ant;
     flipflopD ff_prev (.D(sinal_estavel), .clk(clk), .rst(rst), .Q(estavel_ant));
     not not_prev (n_estavel_ant, estavel_ant);
-    and pulso (btn_out, sinal_estavel, n_estavel_ant);
+    and pulso (btn_out, sinal_estavel, n_estavel_ant); // Saida = (Atual=1) E (Anterior=0)
      
 endmodule
 
+
+// --- REGISTRADOR COM HABILITACAO (3 bits) ---
+// Proposito: Armazena 3 bits. So atualiza o valor se 'habilita' = 1.
 module registrador3b (
      input [2:0] D, 
      input clk, 
      input rst, 
      input habilita, 
-     output [2:0] Q);
-     
+     output [2:0] Q
+);
+    
     wire n_habilita; 
-     wire [2:0] d_g, q_g, d_final; 
-     not n1(n_habilita, habilita);
-     
+    wire [2:0] d_g, q_g, d_final; 
+    
+    not n1(n_habilita, habilita);
+    
+    // Logica de habilitacao (MUX) para o Bit 0
     and a0(d_g[0],D[0],habilita); 
-     and a1(q_g[0],Q[0],n_habilita); 
-     or o0(d_final[0],d_g[0],q_g[0]); 
-     flipflopD ff0(.D(d_final[0]),.clk(clk),.rst(rst),.Q(Q[0]));
+    and a1(q_g[0],Q[0],n_habilita); 
+    or o0(d_final[0],d_g[0],q_g[0]); 
+    flipflopD ff0(.D(d_final[0]),.clk(clk),.rst(rst),.Q(Q[0]));
      
+    // Logica de habilitacao (MUX) para o Bit 1
     and a2(d_g[1],D[1],habilita); 
-     and a3(q_g[1],Q[1],n_habilita); 
-     or o1(d_final[1],d_g[1],q_g[1]); 
-     flipflopD ff1(.D(d_final[1]),.clk(clk),.rst(rst),.Q(Q[1]));
+    and a3(q_g[1],Q[1],n_habilita); 
+    or o1(d_final[1],d_g[1],q_g[1]); 
+    flipflopD ff1(.D(d_final[1]),.clk(clk),.rst(rst),.Q(Q[1]));
      
+    // Logica de habilitacao (MUX) para o Bit 2
     and a4(d_g[2],D[2],habilita); 
-     and a5(q_g[2],Q[2],n_habilita); 
-     or o2(d_final[2],d_g[2],q_g[2]); 
-     flipflopD ff2(.D(d_final[2]),.clk(clk),.rst(rst),.Q(Q[2]));
+    and a5(q_g[2],Q[2],n_habilita); 
+    or o2(d_final[2],d_g[2],q_g[2]); 
+    flipflopD ff2(.D(d_final[2]),.clk(clk),.rst(rst),.Q(Q[2]));
      
 endmodule
+
 
 
 module registrador8b (
@@ -272,3 +282,13 @@ module registrador1b (
     flipflopD ff0(.D(d_final), .clk(clk), .rst(rst), .Q(Q));
      
 endmodule
+
+
+
+
+
+
+
+
+
+
