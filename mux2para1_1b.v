@@ -50,6 +50,8 @@ module mux16b_2para1 (
      
 endmodule
 
+// --- MUX 8-para-1 (8 bits) ---
+// Proposito: Usado na ULA_comb para selecionar o resultado da operacao correta.
 module mux8bOP(
     input [7:0] in_soma, in_sub, in_multi, in_div, in_and, in_or, in_xor, in_not,
     input sel_soma, sel_sub, sel_multi, sel_div, sel_and, sel_or, sel_xor, sel_not,
@@ -58,7 +60,9 @@ module mux8bOP(
 
     wire [7:0] s_soma, s_sub, s_multi, s_div, s_and, s_or, s_xor, s_not;
 
-    // Bit 0
+    // Logica AND/OR para cada bit de saida
+    
+    // Bit 0: S[0] = (sel_soma AND in_soma[0]) OR (sel_sub AND in_sub[0]) OR ...
     and(s_soma[0], sel_soma, in_soma[0]);
     and(s_sub[0], sel_sub, in_sub[0]);
     and(s_multi[0], sel_multi, in_multi[0]);
@@ -147,3 +151,9 @@ module mux8bOP(
     or(S[7], s_soma[7], s_sub[7], s_multi[7], s_div[7], s_and[7], s_or[7], s_xor[7], s_not[7]);
 
 endmodule
+
+
+
+
+
+
