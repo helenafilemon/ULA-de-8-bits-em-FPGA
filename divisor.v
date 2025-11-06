@@ -1,17 +1,21 @@
+// --- DIVISOR COMBINACIONAL (Restauracao) ---
+// Proposito: Implementa a divisao A / B usando o algoritmo de restauracao.
 module divisor(
-    input [7:0] A,
-    input [7:0] B,
-    output [7:0] S,     // Quociente
+    input [7:0] A, // Dividendo
+    input [7:0] B, // Divisor
+    output [7:0] S,    // Quociente
     output R_exists, // Flag: 1 se Resto != 0
-    output ERRO        // Erro: Divisão por zero
+    output ERRO       // Erro: Divisao por zero
 );
     
-    // Lógica interna da divisão (estágios estdiv)
-    wire [7:0] fbit, nfbit;
-    wire [7:0] e0, e1, e2, e3, e4, e5, e6;
-    wire [7:0] R_interno; // Fio interno para o resto de 8 bits
-    wire habilita, R_existe;
-    
+    // --- Fios Internos ---
+    wire [7:0] fbit, nfbit; // fbit = 'Qbit' invertido de cada estagio
+    wire [7:0] e0, e1, e2, e3, e4, e5, e6; // Fios de resto parcial entre estagios
+    wire [7:0] R_interno; // Resto final (saida do ultimo estagio)
+    wire habilita, R_existe, nER;
+
+    // --- Cascata de 8 Estagios de Divisao ('estdiv') ---
+    // Simula a divisao longa: desloca, puxa 1 bit de A, e tenta subtrair B
     estdiv(.A({1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, A[7]}), .B(B), .Qbit(fbit[7]), .Rs(e0));
     estdiv(.A({e0[6], e0[5], e0[4], e0[3], e0[2], e0[1], e0[0], A[6]}), .B(B), .Qbit(fbit[6]), .Rs(e1));
     estdiv(.A({e1[6], e1[5], e1[4], e1[3], e1[2], e1[1], e1[0], A[5]}), .B(B), .Qbit(fbit[5]), .Rs(e2));
@@ -19,10 +23,14 @@ module divisor(
     estdiv(.A({e3[6], e3[5], e3[4], e3[3], e3[2], e3[1], e3[0], A[3]}), .B(B), .Qbit(fbit[3]), .Rs(e4));
     estdiv(.A({e4[6], e4[5], e4[4], e4[3], e4[2], e4[1], e4[0], A[2]}), .B(B), .Qbit(fbit[2]), .Rs(e5));
     estdiv(.A({e5[6], e5[5], e5[4], e5[3], e5[2], e5[1], e5[0], A[1]}), .B(B), .Qbit(fbit[1]), .Rs(e6));
-    estdiv(.A({e6[6], e6[5], e6[4], e6[3], e6[2], e6[1], e6[0], A[0]}), .B(B), .Qbit(fbit[0]), .Rs(R_interno)); // Resto interno
-            
-    // Lógica do Quociente S
-    nor(ERRO, B[0], B[1], B[2], B[3], B[4], B[5], B[6], B[7]); // Divisão por zero
+    estdiv(.A({e6[6], e6[5], e6[4], e6[3], e6[2], e6[1], e6[0], A[0]}), .B(B), .Qbit(fbit[0]), .Rs(R_interno));
+         
+    // --- Logica de Saida (Quociente e Flags) ---
+    
+    // ERRO = 1 se B == 0
+    nor(ERRO, B[0], B[1], B[2], B[3], B[4], B[5], B[6], B[7]); 
+    
+    // O Quociente (S) e o 'fbit' (Borrow Out) invertido de cada estagio
     not(nfbit[0], fbit[0]);
     not(nfbit[1], fbit[1]);
     not(nfbit[2], fbit[2]);
@@ -31,7 +39,9 @@ module divisor(
     not(nfbit[5], fbit[5]);
     not(nfbit[6], fbit[6]);
     not(nfbit[7], fbit[7]);
-    not(habilita, ERRO); // Quociente só é válido se não houver erro
+    
+    // A saida S so e valida se ERRO=0
+    not(habilita, ERRO); 
     and(S[0], habilita, nfbit[0]);
     and(S[1], habilita, nfbit[1]);
     and(S[2], habilita, nfbit[2]);
@@ -41,37 +51,15 @@ module divisor(
     and(S[6], habilita, nfbit[6]);
     and(S[7], habilita, nfbit[7]);
 
-    // --- LÓGICA FINAL: Flag R_exists (usando OR) ---
-    // Se qualquer bit do resto interno for 1, R_exists será 1.
+    // R_exists = 1 se (Resto != 0) E (Nao houver Erro)
     or or_R_exists (R_existe, 
         R_interno[0], R_interno[1], R_interno[2], R_interno[3],
         R_interno[4], R_interno[5], R_interno[6], R_interno[7]);
-     not veriferro (nER, ERRO);
+    not veriferro (nER, ERRO);
     and (R_exists,R_existe, nER);
 endmodule
 
 
-module sub1b(
-    input A,
-    input B,
-    input Bin,
-    output S,
-    output Bout);
-    
-    wire [2:0]f;
-    wire [1:0] n;
-    
-    xor(f[0], A,B);
-    not(n[0], A);
-    and(f[1], n[0], B);
-    
-    xor(S, Bin, f[0]);
-    not(n[1], f[0]);
-    and(f[2], Bin, n[1]);
-    
-    or(Bout, f[1], f[2]);
-
-endmodule
 
 module sub8b(
     input [7:0] A,
@@ -81,28 +69,32 @@ module sub8b(
     
     wire [6:0] b;
     
-    sub1b(.A(A[0]), .B(B[0]), .Bin(1'b0), .S(S[0]), .Bout(b[0]));
-    sub1b(.A(A[1]), .B(B[1]), .Bin(b[0]), .S(S[1]), .Bout(b[1]));
-    sub1b(.A(A[2]), .B(B[2]), .Bin(b[1]), .S(S[2]), .Bout(b[2]));
-    sub1b(.A(A[3]), .B(B[3]), .Bin(b[2]), .S(S[3]), .Bout(b[3]));
-    sub1b(.A(A[4]), .B(B[4]), .Bin(b[3]), .S(S[4]), .Bout(b[4]));
-    sub1b(.A(A[5]), .B(B[5]), .Bin(b[4]), .S(S[5]), .Bout(b[5]));
-    sub1b(.A(A[6]), .B(B[6]), .Bin(b[5]), .S(S[6]), .Bout(b[6]));
-    sub1b(.A(A[7]), .B(B[7]), .Bin(b[6]), .S(S[7]), .Bout(Bout));
+    subtrator_PBL2(.A(A[0]), .B(B[0]), .Bin(1'b0), .Diferenca(S[0]), .Bout(b[0]));
+    subtrator_PBL2(.A(A[1]), .B(B[1]), .Bin(b[0]), .Diferenca(S[1]), .Bout(b[1]));
+    subtrator_PBL2(.A(A[2]), .B(B[2]), .Bin(b[1]), .Diferenca(S[2]), .Bout(b[2]));
+    subtrator_PBL2(.A(A[3]), .B(B[3]), .Bin(b[2]), .Diferenca(S[3]), .Bout(b[3]));
+    subtrator_PBL2(.A(A[4]), .B(B[4]), .Bin(b[3]), .Diferenca(S[4]), .Bout(b[4]));
+    subtrator_PBL2(.A(A[5]), .B(B[5]), .Bin(b[4]), .Diferenca(S[5]), .Bout(b[5]));
+    subtrator_PBL2(.A(A[6]), .B(B[6]), .Bin(b[5]), .Diferenca(S[6]), .Bout(b[6]));
+    subtrator_PBL2(.A(A[7]), .B(B[7]), .Bin(b[6]), .Diferenca(S[7]), .Bout(Bout));
 
 endmodule
 
+// --- ESTAGIO DE DIVISAO (1 Estagio) ---
+// Proposito: Tenta subtrair B de A. Se A < B (Qbit=1), restaura A. Senao (Qbit=0), mantem S.
 module estdiv(
-    input [7:0] A,
-    input [7:0] B,
-    output [7:0] Rs,
-    output Qbit);
+    input [7:0] A, // Resto parcial do estagio anterior
+    input [7:0] B, // Divisor
+    output [7:0] Rs, // Resto parcial para o proximo estagio
+    output Qbit    // Bit do quociente (invertido: 1=falha, 0=sucesso)
+);
     
-    wire [6:0] b;
-    wire [7:0] S;
+    wire [7:0] S; // Resultado da subtracao
     
+    // 1. Tenta subtrair: S = A - B. Qbit e o Borrow Out.
     sub8b(.A(A), .B(B), .S(S), .Bout(Qbit));
     
+    // 2. MUX de Restauracao: Se Qbit=1 (falha), Rs=A. Se Qbit=0 (sucesso), Rs=S.
     mux2para1_1b (.i0(S[0]), .i1(A[0]), .sel(Qbit), .out(Rs[0]));
     mux2para1_1b (.i0(S[1]), .i1(A[1]), .sel(Qbit), .out(Rs[1]));
     mux2para1_1b (.i0(S[2]), .i1(A[2]), .sel(Qbit), .out(Rs[2]));
@@ -113,6 +105,7 @@ module estdiv(
     mux2para1_1b (.i0(S[7]), .i1(A[7]), .sel(Qbit), .out(Rs[7]));
 
 endmodule
+
 
 
 
