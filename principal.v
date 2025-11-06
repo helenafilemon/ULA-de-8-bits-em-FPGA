@@ -21,17 +21,17 @@ module principal(
       wire [7:0] dadosIn, A_ula, B_ula; // Fluxo de dados: Entrada -> Pilha -> ULA
       wire [2:0] Op_ula;          // Registrador do Opcode
       wire [7:0] resComb;         // Saida da ULA combinacional
-      wire [7:0] resReg;          // Registrador do resultado final (para Reuso)
+      wire [7:0] Regres;          // Registrador do resultado final (para Reuso)
       wire habilitaA, habilitaB, habilitaOp, habilitaExec; // Sinais de controle da FSM
       wire Cout_interno, OV_interno, ERRO_interno, Zero_interno, R_exists_interno; // Flags internas
 
       // --- Fios da Logica Sequencial (Multiplicacao) ---
-      wire op_eh_sequencial;     // Flag que indica se Op_ula e uma op. lenta
+      wire op_e_sequencial;     // Flag que indica se Op_ula e uma op. lenta
       wire pode_avancar;         // Logica de "stall" da FSM (trava em 10)
-      wire op_sequencial_done;   // Sinal 'done' vindo do multiplicador
-      wire [7:0] resultado_sequencial_data; // Resultado de 8 bits do multiplicador
+      wire op_sequencial_ok;   // Sinal 'done' vindo do multiplicador
+      wire [7:0] resultado_sequencial; // Resultado de 8 bits do multiplicador
       wire ov_sequencial_flag;   // Flag 'ov' do multiplicador
-      wire [7:0] resMult_data;   // Registrador do resultado da multiplicacao
+      wire [7:0] regMult;   // Registrador do resultado da multiplicacao
       wire resMult_ov;           // Registrador da flag 'ov' da multiplicacao
 
       // --- Instancias de Debouncer ---
@@ -72,8 +72,8 @@ module principal(
       
       // --- Instancias do Caminho de Dados ---
       
-      // MUX de Entrada: Seleciona 'entrada[7:0]' (i0) ou 'resReg' (i1) para a pilha
-      mux2para1_8b mux_entrada(.i0(entrada[7:0]),.i1(resReg),.sel(selMuxA),.out(dadosIn));
+      // MUX de Entrada: Seleciona 'entrada[7:0]' (i0) ou 'Regres' (i1) para a pilha
+      mux2para1_8b mux_entrada(.i0(entrada[7:0]),.i1(Regres),.sel(selMuxA),.out(dadosIn));
       
       // Pilha RPN: Armazena Operando A (saidaA) e Operando B (saidaB)
       pilhaRPN pilha(.D(dadosIn),.clk(clock),.rst(resetFSM_interno),.habilitaA(habilitaA),.habilitaB(habilitaB),.saidaA(A_ula),.saidaB(B_ula));
@@ -88,37 +88,37 @@ module principal(
       not(nOp0_w, Op_ula[0]);
       wire eh_multi;
       and(eh_multi, nOp2, Op_ula[1], nOp0_w); // 010
-      or(op_eh_sequencial, eh_multi, 1'b0);
+      or(op_e_sequencial, eh_multi, 1'b0);
 
       // Logica 'start_pulse' para o multiplicador
       and(estado10, estado[1], n_estado0); // Detecta estado 2'b10
       wire pulso_de_transicao;
       and(pulso_de_transicao, estado10, avancar_fsm);
       wire start_pulse;
-      and(start_pulse, pulso_de_transicao, op_eh_sequencial); 
+      and(start_pulse, pulso_de_transicao, op_e_sequencial); 
 
       // Instancia do Multiplicador
-      multiplicador(.clk(clock), .rst(rst), .A(A_ula), .B(B_ula), .start(start_pulse), .done(op_sequencial_done), 
-            .S_result(resultado_sequencial_data), .ov(ov_sequencial_flag));
+      multiplicador(.clk(clock), .rst(rst), .A(A_ula), .B(B_ula), .start(start_pulse), .done(op_sequencial_ok), 
+            .S_result(resultado_sequencial), .ov(ov_sequencial_flag));
       
       // Registradores para o resultado da multiplicacao
-      registrador8b reg_res_multi_data (.D(resultado_sequencial_data), .clk(clock), .rst(resetFSM_interno), .habilita(op_sequencial_done), .Q(resMult_data));
-      registrador1b reg_res_multi_ov   (.D(ov_sequencial_flag),       .clk(clock), .rst(resetFSM_interno), .habilita(op_sequencial_done), .Q(resMult_ov));
+      registrador8b reg_res_multi_data (.D(resultado_sequencial), .clk(clock), .rst(resetFSM_interno), .habilita(op_sequencial_ok), .Q(regMult));
+      registrador1b reg_res_multi_ov   (.D(ov_sequencial_flag),       .clk(clock), .rst(resetFSM_interno), .habilita(op_sequencial_ok), .Q(resMult_ov));
       
       // Logica 'pode_avancar' (Sinal de "Stall")
-      wire n_op_eh_sequencial;
-      not(n_op_eh_sequencial, op_eh_sequencial);
+      wire n_op_e_sequencial;
+      not(n_op_e_sequencial, op_e_sequencial);
       wire n_estado10;
       not(n_estado10, estado10); 
       wire condicao_stall;
-      or(condicao_stall, n_op_eh_sequencial, op_sequencial_done); 
+      or(condicao_stall, n_op_e_sequencial, op_sequencial_ok); 
       or(pode_avancar, n_estado10, condicao_stall); 
       // --- Fim Logica Sequencial ---
       
       // Instancia da ULA Combinacional
       ULA_comb ula_combinacional(
             .A(A_ula), .B(B_ula), .Op(Op_ula),
-            .s_multi(resMult_data), .ov_mult(resMult_ov), // Conecta resultado do multiplicador
+            .s_multi(regMult), .ov_mult(resMult_ov), // Conecta resultado do multiplicador
             .S(resComb), .Cout(Cout_interno), .OV(OV_interno),
             .ERRO(ERRO_interno), .Zero(Zero_interno),
             .R_exists_out(R_exists_interno) 
@@ -126,7 +126,7 @@ module principal(
       
       // Registrador de Resultado Final
      
-      registrador8b reg_resultado(.D(resComb),.clk(clock),.rst(resetFSM_interno),.habilita(habilitaExec),.Q(resReg));
+      registrador8b reg_resultado(.D(resComb),.clk(clock),.rst(resetFSM_interno),.habilita(habilitaExec),.Q(Regres));
       
       // --- Logica de Saida (Display) ---
       wire [7:0] valExibir;
@@ -149,7 +149,7 @@ module principal(
       or p7(topoPilha8b[7], B_ula[7], 1'b0);
       
       // MUX Final: Seleciona entre topo da pilha (i0) ou resultado (i1)
-      mux2para1_8b mux_final(.i0(topoPilha8b),.i1(resReg),.sel(mostraResultado),.out(valExibir));
+      mux2para1_8b mux_final(.i0(topoPilha8b),.i1(Regres),.sel(mostraResultado),.out(valExibir));
       displayDHO display_final(.A(valExibir), .sel(selDisp), .U(dis0), .D(dis1), .C(dis2));
       
       // --- Logica das Flags de Saida ---
@@ -167,9 +167,7 @@ module principal(
   
       wire enable_resto_led, verdadeiro;
       and and_enable_resto(enable_resto_led, R_exists_interno, habilitaExec); 
-          and ativar_resto (verdadeiro, Op_ula[0], Op_ula[1],nOp2);
+      and ativar_resto (verdadeiro, Op_ula[0], Op_ula[1],nOp2);
       and or_resto_led(resto_led, enable_resto_led, verdadeiro); 
 
 endmodule
-
-
