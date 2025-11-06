@@ -10,20 +10,20 @@ module divisor(
     
     // --- Fios Internos ---
     wire [7:0] fbit, nfbit; // fbit = 'Qbit' invertido de cada estagio
-    wire [7:0] e0, e1, e2, e3, e4, e5, e6; // Fios de resto parcial entre estagios
-    wire [7:0] R_interno; // Resto final (saida do ultimo estagio)
-    wire habilita, R_existe, nER;
+    wire [7:0] r0, r1, r2, r3, r4, r5, r6; // Fios de resto parcial entre estagios
+    wire [7:0] Resto_int; // Resto final (saida do ultimo estagio)
+    wire habilita, Resto_existe, nER;
 
     // --- Cascata de 8 Estagios de Divisao ('estdiv') ---
     // Simula a divisao longa: desloca, puxa 1 bit de A, e tenta subtrair B
-    estdiv(.A({1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, A[7]}), .B(B), .Qbit(fbit[7]), .Rs(e0));
-    estdiv(.A({e0[6], e0[5], e0[4], e0[3], e0[2], e0[1], e0[0], A[6]}), .B(B), .Qbit(fbit[6]), .Rs(e1));
-    estdiv(.A({e1[6], e1[5], e1[4], e1[3], e1[2], e1[1], e1[0], A[5]}), .B(B), .Qbit(fbit[5]), .Rs(e2));
-    estdiv(.A({e2[6], e2[5], e2[4], e2[3], e2[2], e2[1], e2[0], A[4]}), .B(B), .Qbit(fbit[4]), .Rs(e3));
-    estdiv(.A({e3[6], e3[5], e3[4], e3[3], e3[2], e3[1], e3[0], A[3]}), .B(B), .Qbit(fbit[3]), .Rs(e4));
-    estdiv(.A({e4[6], e4[5], e4[4], e4[3], e4[2], e4[1], e4[0], A[2]}), .B(B), .Qbit(fbit[2]), .Rs(e5));
-    estdiv(.A({e5[6], e5[5], e5[4], e5[3], e5[2], e5[1], e5[0], A[1]}), .B(B), .Qbit(fbit[1]), .Rs(e6));
-    estdiv(.A({e6[6], e6[5], e6[4], e6[3], e6[2], e6[1], e6[0], A[0]}), .B(B), .Qbit(fbit[0]), .Rs(R_interno));
+    estdiv(.A({1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, A[7]}), .B(B), .Qbit(fbit[7]), .Rs(r0));
+    estdiv(.A({r0[6], r0[5], r0[4], r0[3], r0[2], r0[1], r0[0], A[6]}), .B(B), .Qbit(fbit[6]), .Rs(r1));
+    estdiv(.A({r1[6], r1[5], r1[4], r1[3], r1[2], r1[1], r1[0], A[5]}), .B(B), .Qbit(fbit[5]), .Rs(r2));
+    estdiv(.A({r2[6], r2[5], r2[4], r2[3], r2[2], r2[1], r2[0], A[4]}), .B(B), .Qbit(fbit[4]), .Rs(r3));
+    estdiv(.A({r3[6], r3[5], r3[4], r3[3], r3[2], r3[1], r3[0], A[3]}), .B(B), .Qbit(fbit[3]), .Rs(r4));
+    estdiv(.A({r4[6], r4[5], r4[4], r4[3], r4[2], r4[1], r4[0], A[2]}), .B(B), .Qbit(fbit[2]), .Rs(r5));
+    estdiv(.A({r5[6], r5[5], r5[4], r5[3], r5[2], r5[1], r5[0], A[1]}), .B(B), .Qbit(fbit[1]), .Rs(r6));
+    estdiv(.A({r6[6], r6[5], r6[4], r6[3], r6[2], r6[1], r6[0], A[0]}), .B(B), .Qbit(fbit[0]), .Rs(Resto_int));
          
     // --- Logica de Saida (Quociente e Flags) ---
     
@@ -52,33 +52,13 @@ module divisor(
     and(S[7], habilita, nfbit[7]);
 
     // R_exists = 1 se (Resto != 0) E (Nao houver Erro)
-    or or_R_exists (R_existe, 
-        R_interno[0], R_interno[1], R_interno[2], R_interno[3],
-        R_interno[4], R_interno[5], R_interno[6], R_interno[7]);
+    or or_R_exists (Resto_existe, 
+        Resto_int[0], Resto_int[1], Resto_int[2], Resto_int[3],
+        Resto_int[4], Resto_int[5], Resto_int[6], Resto_int[7]);
     not veriferro (nER, ERRO);
-    and (R_exists,R_existe, nER);
+    and (R_exists,Resto_existe, nER);
 endmodule
 
-
-
-module sub8b(
-    input [7:0] A,
-    input [7:0] B,
-    output [7:0] S,
-    output Bout);
-    
-    wire [6:0] b;
-    
-    subtrator_PBL2(.A(A[0]), .B(B[0]), .Bin(1'b0), .Diferenca(S[0]), .Bout(b[0]));
-    subtrator_PBL2(.A(A[1]), .B(B[1]), .Bin(b[0]), .Diferenca(S[1]), .Bout(b[1]));
-    subtrator_PBL2(.A(A[2]), .B(B[2]), .Bin(b[1]), .Diferenca(S[2]), .Bout(b[2]));
-    subtrator_PBL2(.A(A[3]), .B(B[3]), .Bin(b[2]), .Diferenca(S[3]), .Bout(b[3]));
-    subtrator_PBL2(.A(A[4]), .B(B[4]), .Bin(b[3]), .Diferenca(S[4]), .Bout(b[4]));
-    subtrator_PBL2(.A(A[5]), .B(B[5]), .Bin(b[4]), .Diferenca(S[5]), .Bout(b[5]));
-    subtrator_PBL2(.A(A[6]), .B(B[6]), .Bin(b[5]), .Diferenca(S[6]), .Bout(b[6]));
-    subtrator_PBL2(.A(A[7]), .B(B[7]), .Bin(b[6]), .Diferenca(S[7]), .Bout(Bout));
-
-endmodule
 
 // --- ESTAGIO DE DIVISAO (1 Estagio) ---
 // Proposito: Tenta subtrair B de A. Se A < B (Qbit=1), restaura A. Senao (Qbit=0), mantem S.
@@ -92,7 +72,7 @@ module estdiv(
     wire [7:0] S; // Resultado da subtracao
     
     // 1. Tenta subtrair: S = A - B. Qbit e o Borrow Out.
-    sub8b(.A(A), .B(B), .S(S), .Bout(Qbit));
+    subtrator_8bits(.A(A), .B(B), .S(S), .Bout(Qbit));
     
     // 2. MUX de Restauracao: Se Qbit=1 (falha), Rs=A. Se Qbit=0 (sucesso), Rs=S.
     mux2para1_1b (.i0(S[0]), .i1(A[0]), .sel(Qbit), .out(Rs[0]));
@@ -105,11 +85,3 @@ module estdiv(
     mux2para1_1b (.i0(S[7]), .i1(A[7]), .sel(Qbit), .out(Rs[7]));
 
 endmodule
-
-
-
-
-
-
-
-
