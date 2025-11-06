@@ -87,15 +87,15 @@ module contador2b (
 
     // Logica de Habilitacao (Enable): Se enable=0, D=Q (mantem estado)
     not n1 (n_enable, enable);
-    wire d0_g, q0_g;
-    and a0 (d0_g, d0_logic, enable);
+    wire f0_g, q0_g;
+    and a0 (f0_g, d0_logic, enable);
     and a1 (q0_g, Q[0], n_enable);
-    or o0 (D_final[0], d0_g, q0g);
+    or o0 (D_final[0], f0_g, q0g);
 
-    wire d1_g, q1_g;
-    and a2 (d1_g, d1_logic, enable);
+    wire f1_g, q1_g;
+    and a2 (f1_g, d1_logic, enable);
     and a3 (q1_g, Q[1], n_enable);
-    or o1 (D_final[1], d1_g, q1_g);
+    or o1 (D_final[1], f1_g, q1_g);
 
     // Flip-flops que armazenam o estado
     flipflopD ff0 (.D(D_final[0]), .clk(clk), .rst(rst), .Q(Q[0]));
