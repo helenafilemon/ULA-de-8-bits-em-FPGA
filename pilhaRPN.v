@@ -14,7 +14,6 @@ module pilhaRPN(
     // 'enable_reg_B' e ativado se 'habilitaA' OU 'habilitaB' estiverem ativos.
     or or_enable_B(enable_reg_B, habilitaA, habilitaB);
 
-    // (Nota: Esta logica esta incorreta para "Reuso", reg_A deveria ser habilitado por enable_reg_B)
     // reg_A (fundo) recebe o valor antigo de B (saidaB)
     registrador8b reg_A(.D(saidaB),.clk(clk),.rst(rst),.habilita(habilitaB),.Q(saidaA));
     // reg_B (topo) recebe o novo dado (D)
